@@ -11,7 +11,7 @@ Tehtävät ovat Tero Karvisen opintojaksolta [Palvelinten Hallinta 2025 kevät](
 
 
 
-
+t 
 
 ### Lähteet
 
