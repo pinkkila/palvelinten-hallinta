@@ -56,12 +56,55 @@ sudo apt-get update
 sudo apt-get install salt-master
 sudo apt-get install salt-minion
 ```
+---
 
 ### b) Asenna Salt (salt-minion) Linuxille (uuteen virtuaalikoneeseesi).
 
+Ajoin [Salt Install Guide: Linux (DEB)](https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/linux-deb.html) ohjeiden mukaisesti seuraavat komennot (asensin curl ennen kuin ajoin toisen komennon):
+
+```
+mkdir -p /etc/apt/keyrings
+```
+
+```
+curl -fsSL https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public | sudo tee /etc/apt/keyrings/salt-archive-keyring.pgp
+```
+
+![img.png](img.png)
+
+```
+curl -fsSL https://github.com/saltstack/salt-install-guide/releases/latest/download/salt.sources | sudo tee /etc/apt/sources.list.d/salt.sources
+```
+
+![img_1.png](img_1.png)
+
+```
+sudo apt-get update
+```
+
+```
+sudo apt-get install salt-minion
+```
+
+![img_2.png](img_2.png)
+
+---
+
+### c) Viisi tärkeintä. 
+
+Käytin tässä tehtävässä Karvisen sivulla olleita ohjeita ja komentoja https://terokarvinen.com/2021/salt-run-command-locally/.
+
+#### pkg
+
+```
+sudo salt-call --local state.single pkg.installed tree
+```
+
+![img_3.png](img_3.png)
 
 
 
+---
 
 ### Lähteet
 
