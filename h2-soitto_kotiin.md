@@ -1,4 +1,4 @@
-## h1 Soitto kotiin
+## h2 Soitto kotiin
 
 Tehtävät ovat Tero Karvisen opintojaksolta [Palvelinten Hallinta 2025 kevät](https://terokarvinen.com/palvelinten-hallinta/)
 
@@ -9,7 +9,6 @@ Tehtävät ovat Tero Karvisen opintojaksolta [Palvelinten Hallinta 2025 kevät](
 - Apple MacBook Pro M2 Max
 - macOS Sequoia 15.3.1
 - Parallels ARM Virtual Machine
-- Debian GNU/Linux 12.6
 
 ---
 
