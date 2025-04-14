@@ -8,7 +8,7 @@ Tehtävät ovat Tero Karvisen opintojaksolta [Palvelinten Hallinta 2025 kevät](
 
 - Apple MacBook Pro M2 Max
 - macOS Sequoia 15.3.1
-- Parallels Desktop - Debian Linux 2024.2
+- Parallels Desktop
 
 ---
 
