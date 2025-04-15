@@ -16,7 +16,7 @@ Tehtävät ovat Tero Karvisen opintojaksolta [Palvelinten Hallinta 2025 kevät](
 
 - Karvinen 2014: Hello Salt Infra-as-Code [^3]
 
-    - Saltilla voi tehdä moduuleja luomalla omia stateja.
+    - Saltilla voi tehdä omia stateja. State konfiroidaan luomalla moduuli.
     - moduuli on hakemistossa /srv/salt/moduulin-nimi oleva init.sls tiedosto. 
     - moduulin koodin tulisi toteuttaa idempotentti tila.
 
@@ -29,7 +29,7 @@ Tehtävät ovat Tero Karvisen opintojaksolta [Palvelinten Hallinta 2025 kevät](
         - List (key: jota seuraa lista
         - Dictionary (kokoelma key: valueita ja listoja)
 
-    - yaml on organisoitu block rakenteessa, joka määritetään sisennyksellä
+    - yaml on organisoitu block rakenteella, joka määritetään sisennyksellä
 
 ---
 
@@ -71,22 +71,22 @@ sudo mkdir -p /srv/salt/hello/
 
 srv/salt hakemisto tulee jaetuksi kaikille minion tietokoneille. [^3] 
 
-tässä /hello hakemisto on mooduuli, joka joka tulee sisältämään kaiken moduuliin tarvittan (voi sisältää koodia, tiedostoja tai templateja) [^3]
+tässä /hello hakemisto on mooduuli, joka tulee sisältämään kaiken moduuliin tarvittan (voi sisältää koodia, tiedostoja tai templateja) [^3]
 
-Kun moduuli "hello" ajetaan entrypointtina on /hello hakemistoon tehtävä tiedosto init.sls [^3]
+Kun moduuli "hello" ajetaan, entrypointtina on /hello hakemistoon tehtävä tiedosto init.sls [^3]
 
-Tein seuraavaksi juurikin tuon init.sls tiedoston seuraavalla komennolla ja sisällöllä [^3]:
+Tein seuraavaksi juurikin tuon init.sls tiedoston ja seuraavalla komennolla ja sisällöllä [^3]:
 
 ```
 sudoedit init.sls
 ```
 
 ```yaml
-/tmp/hellopetteri:
+/tmp/hellopetteri  # tässä on virhe
   file.managed
 ```
 
-Tämän jälkeen päästiin ajamaan moduuli salt komennolla [^3]:
+Tämän jälkeen ajoin seuraavan komennon [^3]:
 
 ```
 sudo salt-call --local state.apply hello
@@ -247,7 +247,7 @@ Minioneita ohjataan masterin /srv/salt/ hakemistoon konfiguroitujen moduulien av
 
 Tein ensin kaksi virtuaalikonetta ja niihin master minion konfiguroinnin, kuten olin tehnyt tehtävässä h2 [^7].  
 
-Koska oli poistanut aiemman virtuaalikoneen ja tehnyt uudet. tein uuden modluulin:
+Koska olin poistanut aiemman virtuaalikoneen ja tehnyt uudet, tein uuden modluulin:
 
 ```bash
 vagrant@master:~$ cat /srv/salt/hello/init.sls
@@ -255,7 +255,7 @@ vagrant@master:~$ cat /srv/salt/hello/init.sls
   file.managed
 ```
 
-Katsoin Karvisen sivun ohjeesta, miten moduulin voi ajaa [^1].
+Katsoin Karvisen sivun ohjeesta, miten moduulin (tai oikeammin varmaan ehkä state-komennon) voi ajaa [^1].
 
 ```
 sudo salt '*' state.apply hello
@@ -313,7 +313,7 @@ hellominion
 
 ### c) Tee sls-tiedosto, joka käyttää vähintään kahta eri tilafunktiota näistä: package, file, service, user.
 
-Karvisen ohjeen [^3] loppuosion ohjeen perusteella lähden kokeilemaan seuraavaa:
+Karvisen ohjeen [^3] loppuosion ohjeen perusteella lähdin kokeilemaan seuraavaa (eli koitan asentaa apache2 omalla statella):
 
 ```bash
 vagrant@master:/srv/salt$ sudo mkdir web
@@ -516,9 +516,9 @@ Sivu on myös vaihtunut:
 ![img_1.png](img/h3-infraa-koodina/img_1.png)
 
 
-Seuraavaksi ajattelin tehdä tilan joka varmistaa, että apache on enabled, siltä varalta, jos minionin kone sammuu. 
+Seuraavaksi ajattelin tehdä tilan joka varmistaa, että apache on enabled, siltä varalta, jos minionin kone sammuu, eikä apache2 oliskaan enabled. 
 
-Katsoin seuraavalla komennolla ohjeita ja sitä miten voisin tämän tehdä.
+Katsoin seuraavalla komennolla ohjeita:
 
 ```
 sudo salt-call --local sys.state_doc service
