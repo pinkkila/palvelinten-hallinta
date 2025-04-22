@@ -86,7 +86,7 @@ sudo systemctl start salt-master.service
 sudo salt-key -A
 ```
 
-###### Ensin käsin, vasta sitten automaattisesti.
+#### Ensin käsin, vasta sitten automaattisesti.
 
 Käytin masterissa seuraavia komentoja [^2]:
 
@@ -188,7 +188,7 @@ Total states run:     1
 Total run time: 412.258 ms
 ```
 
-###### Kirjoita tila sls-tiedostoon.
+#### Kirjoita tila sls-tiedostoon.
 
 ```bash
 $ cat /srv/salt/sshd.sls
@@ -306,7 +306,7 @@ vagrant@master:~$
 
 ### b) SSHouto. Lisää uusi portti, jossa SSHd kuuntelee.
 
-###### Ensin käsin.
+#### Ensin käsin.
 
 Jotta voisin nyt käyttää file.managed tarvitsisin ensin tiedoston, jolla suorittaisin varsinaisen komennon. Päätin jo valmiiksi tehdä /srv/sal hakemistoon tarvittavan kansion ja tiedoston. 
 
@@ -854,7 +854,7 @@ first-debian-minion001-1745241774567-88943.shared [10.211.55.32] 1234 (?) open
 
 
 
-###### Kirjoita tila sls-tiedostoon.
+#### Kirjoita tila sls-tiedostoon.
 
 Tein jo valmiiseen /srv/salt/ssh hakemistoon init.sls tiedoston. Käytin apuna Karvisen ohjetta [^4]:
 
@@ -977,6 +977,8 @@ Portti oli vaihtunut ja moduuli toimi idempotentisti.
 
 ### Asenna ja konfiguroi Apache ja Name Based Virtual Host. Sen tulee näyttää palvelimen etusivulla weppisivua. Weppisivun tulee olla muokattavissa käyttäjän oikeuksin, ilman sudoa.
 
+Aiemman tekemäni perusteella ja Karvisen [^5] sekä Linoden [^10] ohjeiden perusteella, minulla on aavistus siitä, miten tämän voisi tehdä, niin lähden kokeilemaan suoraan sls-tiedoston tekemistä. 
+
 Tehdään ensin apache niminen moduuli ja siihen tarvittavat tiedostot:
 
 ```
@@ -999,15 +1001,19 @@ vagrant@master:/srv/salt/apache$ cat pinkkila.com.conf
 ```bash
 vagrant@master:/srv/salt/apache$ cat index.html
 <h1>Pinkkila</h1>
+vagrant@master:/srv/salt/apache$ cat default-index.html
+default
 ```
 
 ```
 sudoedit /srv/salt/apache/init.sls
 ```
 
-Käytin tässä apuna Karvisen ohjetta [^5] ja `apache_site` ja `require` otin Linoden ohjeesta [^9].
+Käytin tässä apuna Karvisen ohjetta [^5] ja `apache_site` ja `require` otin Linoden ohjeesta [^10].
 
-`apache_site` on saltin apache moduulista. disabled = a2dissite ja enabled = a2ensite [^9].
+`apache_site` on saltin apache moduulista. disabled = a2dissite ja enabled = a2ensite [^10].
+
+`makedirs` löysin tästä saltstackin GitHub Issuesta [^11].
 
 Vaikka totetus tekeekin, mitä sen pitäisi, eroaa se paljon molemmista lähteistä ja on sitä myöten varmaankin toteutuksena "ei paras mahdollinen".
 
@@ -1178,3 +1184,5 @@ Total run time:   3.228 s
 [^9]: Ubuntu Server. OpenSSH server: https://documentation.ubuntu.com/server/how-to/security/openssh-server/index.html
 
 [^10]: Linode LLC. Configure Apache with Salt Stack: https://www.linode.com/docs/guides/configure-apache-with-salt-stack/
+
+[^11]: saltstack. makedirs=True not working as expected #49274: https://github.com/saltstack/salt/issues/49274
