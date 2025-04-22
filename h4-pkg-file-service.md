@@ -1015,7 +1015,7 @@ Käytin tässä apuna Karvisen ohjetta [^5] ja `apache_site` ja `require` otin L
 
 `makedirs` löysin saltstackin GitHub Issuesta [^11].
 
-Vaikka totetus tekeekin, mitä sen pitäisi, eroaa se paljon molemmista lähteistä ja on sitä myöten varmaankin toteutuksena "ei paras mahdollinen".
+Vaikka totetus tekeekin mitä sen pitäisi, eroaa se paljon molemmista lähteistä ja on sitä myöten varmaankin toteutuksena "ei paras mahdollinen".
 
 (Alunperin vagrant käyttäjän kotihakemistolla ei ollut x oikeuksia ja muutin ne minionista käsin `sudo chmod ugo+x`).
 
