@@ -1013,7 +1013,7 @@ Käytin tässä apuna Karvisen ohjetta [^5] ja `apache_site` ja `require` otin L
 
 `apache_site` on saltin apache moduulista. disabled = a2dissite ja enabled = a2ensite [^10].
 
-`makedirs` löysin tästä saltstackin GitHub Issuesta [^11].
+`makedirs` löysin saltstackin GitHub Issuesta [^11].
 
 Vaikka totetus tekeekin, mitä sen pitäisi, eroaa se paljon molemmista lähteistä ja on sitä myöten varmaankin toteutuksena "ei paras mahdollinen".
 
