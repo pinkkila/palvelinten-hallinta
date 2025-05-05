@@ -193,13 +193,13 @@ sudo mkdir -p /srv/salt/jdk
 sudoedit /srv/salt/jdk/init.sls
 ```
 
-Aiempien asentelujeni peruteella menin Oraclen sivuille [^6] katsomaan miten saisin ladattua jdk-21 Debianiin. Koska käytän ARM konetta valittavaksi jäi tarpallon lataaminen. Latasin ensin jdk:n suoraan toiselle Debianin virutaalikoneelle ja kävin asentamisen sillä läpi. Macissa vaihtelen HOME_JAVA:n jdk:ta .zshr tiedostossa ja saman pystyi tekemään myös Debianin .bashrc tiedostossa, mutta sen ongelmaksi tulee varmastikkin se, että HOME_JAVA on user:n muuttuja ja koska salt ajaa kaiken sudo:na ei se ole ehkä toimiva ratkaisu. Kysyin tähän ChatGPT:ltä [^7] vinkkiä ja päädyin vinkin ja tämän Stack Overflow keskustelun [^8] perusteella laittamaan /etc/profile.d/java.sh kansioon konfiguroinnin JAVA_HOME:sta ja PATH:sta. En ehtinyt ihan kunnolla selvittää tuota profide.d hakemisto ja vaikka toisen hyvänoloisen keskustelun [^9], niin en ihan sisäistänyt sitä. Täytyy myöhemmin opiskella tarkemmin.     
+Aiempien asentelujeni peruteella menin Oraclen sivuille [^6] katsomaan miten saisin ladattua jdk-21 Debianiin. Koska käytän ARM konetta valittavaksi jäi tarpallon lataaminen. Latasin ensin jdk:n suoraan toiselle Debianin virutaalikoneelle ja kävin asentamisen sillä läpi. Macissa vaihtelen HOME_JAVA:n jdk:ta .zshr tiedostossa ja saman pystyi tekemään myös Debianin .bashrc tiedostossa, mutta sen ongelmaksi tulee varmastikkin se, että HOME_JAVA on user:n muuttuja ja koska salt ajaa kaiken sudo:na ei se ole ehkä toimiva ratkaisu. Kysyin tähän ChatGPT:ltä [^7] vinkkiä ja päädyin vinkin ja tämän Stack Overflow keskustelun [^8] perusteella laittamaan /etc/profile.d/java.sh kansioon konfiguroinnin JAVA_HOME:sta ja PATH:sta. En ehtinyt ihan kunnolla selvittää tuota profide.d hakemisto ja vaikka toisen hyvänoloisen keskustelun [^9], niin en ihan sisäistänyt sitä. Täytyy myöhemmin opiskella tarkemmin. GPT:n [^7] ohjeesta tutkein myös `/opt` hakemistoa ja jos ymmärrän oikein niin ehkä sen käyttö on tässä ok, koska jdk sisältää useita kansioita ja filejä sisällään [^15], mutta en ole kyllä yhtään varma.        
 
 Kun sourcessa on verkko-osoite tarvitsee se Saltin virheilmoituksen mukaan joko tarkistaa hashilla tai sitten skipata. Täytyy myöhemmin tutkia tätäkin, mutta nyt skippasin. 
 
-Käytin taas Linoden ohjetta Salt:sta ja otin sieltä `makedirs` (tekee puuttuvat kansiot) ja `require` (ei suorita ennen kuin requiren on suoritettu) [^10]. 
+Käytin Linoden ohjetta Salt:sta ja otin sieltä `makedirs` (tekee puuttuvat kansiot) ja `require` (ei suorita ennen kuin requiren on suoritettu) [^10]. 
 
-`creates` cmd.run statessa aiheuttaa sen, että cmd.run ajetaan vain, jos tiedostoa ei ole olemassa [^11]
+`creates` cmd.run statessa aiheuttaa sen, että cmd.run ajetaan vain, jos tiedostoa ei ole olemassa [^11].
 
 
 ```yaml
@@ -330,12 +330,396 @@ Ajoin staten myös auth- ja bff-minineille.
 
 ## Postgres
 
+Resource-serverin Spring sovelluksen application.yaml:ssa minulla on yksinkertaisin mahdollinen datasource konfiguraatio:
 
+```yaml
+  datasource:
+    username: myuser
+    password: secret
+    url: "jdbc:postgresql://127.0.0.1:5432/shop_db"
 
+  sql:
+    init:
+      mode: always
+```
+
+Asensin ensin Karvisen ohjeilla [^12] Postgresin toiselle Debianin virtuaalikoneelle nähdäkseni hieman mitä tapahtuu. 
+
+Seuraavaksi tein löytämäni ohjeen [^13] perusteella seuraavan init.sls tiedoston /srv/salt/postgre hakemistoon:
+
+Myöhemmin piti lisätä `- encrypted: scram-sha-256` [^14], koska password authentication failed. Tämä tapahtui koska GPT:n [^7] vinkillä katsoin postgren pg_hba.conf tiedostostoon ja se näytti tältä:
+
+```
+# Database administrative login by Unix domain socket
+local   all             postgres                                peer
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            scram-sha-256
+# IPv6 local connections:
+host    all             all             ::1/128                 scram-sha-256
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     peer
+host    replication     all             127.0.0.1/32            scram-sha-256
+host    replication     all             ::1/128                 scram-sha-256
+```
+
+Lisäsin myöhemmin myös `owner` [^13], koska ilman sitä ei ollut oikeutta schemaan.
+
+```yaml
+postgresql:
+  pkg.installed
+          
+myuser:
+  postgres_user.present:
+    - password: secret
+    - encrypted: scram-sha-256
+    - require:
+        - pkg: postgresql
+  
+shop_db:
+  postgres_database.present:
+    - owner: myuser
+    - require:
+      - postgres_user: myuser
+```
+
+State näyttäisi toimivan, mutta nähtäväksi jää toimiiko se suoraan Spring sovelluksen kanssa (ei toiminut ilman noita kahta lisäystä (enqrypted ja owner). 
+
+```bash
+vagrant@master:/srv/salt/postgre$ sudo salt 'resource' state.apply postgre
+resource:
+----------
+          ID: postgresql
+    Function: pkg.installed
+      Result: True
+     Comment: The following packages were installed/updated: postgresql
+     Started: 10:45:47.846704
+    Duration: 11910.466 ms
+     Changes:
+              ----------
+              libcommon-sense-perl:
+                  ----------
+                  new:
+                      3.75-3
+                  old:
+              libjson-perl:
+                  ----------
+                  new:
+                      4.10000-1
+                  old:
+              libjson-xs-perl:
+                  ----------
+                  new:
+                      4.030-2+b1
+                  old:
+              libllvm14:
+                  ----------
+                  new:
+                      1:14.0.6-12
+                  old:
+              libpq5:
+                  ----------
+                  new:
+                      15.12-0+deb12u2
+                  old:
+              libsensors-config:
+                  ----------
+                  new:
+                      1:3.6.0-7.1
+                  old:
+              libsensors5:
+                  ----------
+                  new:
+                      1:3.6.0-7.1
+                  old:
+              libtypes-serialiser-perl:
+                  ----------
+                  new:
+                      1.01-1
+                  old:
+              libxslt1.1:
+                  ----------
+                  new:
+                      1.1.35-1+deb12u1
+                  old:
+              libz3-4:
+                  ----------
+                  new:
+                      4.8.12-3.1
+                  old:
+              postgresql:
+                  ----------
+                  new:
+                      15+248
+                  old:
+              postgresql-15:
+                  ----------
+                  new:
+                      15.12-0+deb12u2
+                  old:
+              postgresql-client-15:
+                  ----------
+                  new:
+                      15.12-0+deb12u2
+                  old:
+              postgresql-client-common:
+                  ----------
+                  new:
+                      248
+                  old:
+              postgresql-common:
+                  ----------
+                  new:
+                      248
+                  old:
+              ssl-cert:
+                  ----------
+                  new:
+                      1.1.2
+                  old:
+              sysstat:
+                  ----------
+                  new:
+                      12.6.1-1
+                  old:
+----------
+          ID: shop_db
+    Function: postgres_database.present
+      Result: True
+     Comment: The database shop_db has been created
+     Started: 10:45:59.759190
+    Duration: 169.345 ms
+     Changes:
+              ----------
+              shop_db:
+                  Present
+----------
+          ID: myuser
+    Function: postgres_user.present
+      Result: True
+     Comment: The user myuser has been created
+     Started: 10:45:59.930539
+    Duration: 360.182 ms
+     Changes:
+              ----------
+              myuser:
+                  Present
+
+Summary for resource
+------------
+Succeeded: 3 (changed=3)
+Failed:    0
+------------
+Total states run:     3
+Total run time:  12.440 s
+vagrant@master:/srv/salt/postgre$ sudo salt 'resource' state.apply postgre
+resource:
+----------
+          ID: postgresql
+    Function: pkg.installed
+      Result: True
+     Comment: All specified packages are already installed
+     Started: 10:46:19.407439
+    Duration: 8.608 ms
+     Changes:
+----------
+          ID: shop_db
+    Function: postgres_database.present
+      Result: True
+     Comment: Database shop_db is already present
+     Started: 10:46:19.416283
+    Duration: 132.947 ms
+     Changes:
+----------
+          ID: myuser
+    Function: postgres_user.present
+      Result: True
+     Comment: User myuser is already present
+     Started: 10:46:19.550721
+    Duration: 144.451 ms
+     Changes:
+
+Summary for resource
+------------
+Succeeded: 3
+Failed:    0
+------------
+Total states run:     3
+Total run time: 286.006 ms
+```
 
 ---
 
 ## Spring Boot sovellukset
+
+Muutin resource-serverin application.yaml seuraavaksi:
+
+```yaml
+server:
+  port: 8090
+  address: 192.168.51.5
+
+spring:
+  application:
+    name: resource-server
+
+  datasource:
+    username: myuser
+    password: secret
+    url: "jdbc:postgresql://127.0.0.1:5432/shop_db"
+
+  sql:
+    init:
+      mode: always
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://192.168.51.6:9000/oauth2/jwks
+
+logging:
+  level:
+    org.springframework.security: trace
+```
+
+
+Buildasin resource-serverin ja kopioin .jar filen vagrant_data hakemistoon (tähän oli Vagrantifilessä tehty se synced_folder). Sitten sain masterissa kopioitua (vaati sudon):
+
+```
+sudo cp /vagrant_data/resource-server-0.0.1-SNAPSHOT.jar /srv/salt/resource/files
+```
+
+Nyt olettaisin ainakin, että /opt kansio on oikea paikka pitä .jar tiedostoa, joten päätin käyttää sitä. 
+
+Kun tutkein miten Spring sovellukset tulisi laittaa, löysin Dynamic Technologisin YouTube videon [^16], jonka avulla tein seuraavan filen (virheitä tuli, mutta en laita kaikki tähän, koska tästä tulisi valtan pitkä ja sekava). Laitoin myös Linoden ojeessa [^10] olevan `watch` statementin, joka käynnistää servicen uudelleen, jos .jar tiedosto muuttuu. En tiennyt onko tälläinen itse määritetty service automaattisesti enabled, joten laitoin siihen true. Aika monessa ohjessa näkee tuon enabled olevan lähes poikkeuksetta laitettu serviceiden kanssa, joten oliskohan se hyvä laittaa joka kerta 🤔. Tein myös muille Springeille omat statet.  
+
+```yaml
+/opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar:
+  file.managed:
+    - source: salt://resource/files/resource-server-0.0.1-SNAPSHOT.jar
+    - makedirs: true
+      
+/etc/systemd/system/resource-server.service:
+  file.managed:
+    - contents: |
+        [Unit]
+        Description=Spring Boot Resource Server
+        After=network.target
+
+        [Service]
+        User=root
+        ExecStart=/opt/jdk/jdk-21.0.7/bin/java -jar /opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar
+        SuccessExitStatus=143
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - require:
+      - file: /opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar
+        
+resource-server.service:
+  service.running:
+    - enable: True
+    - watch:
+      - file: /opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar
+    - require:
+      - file: /etc/systemd/system/resource-server.service
+```
+
+![img.png](img.png)
+
+
+
+```yaml
+/opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar:
+  file.managed:
+    - source: salt://auth/files/authorization-server-0.0.1-SNAPSHOT.jar
+    - makedirs: true
+      
+/etc/systemd/system/authorization-server.service:
+  file.managed:
+    - contents: |
+        [Unit]
+        Description=Spring Boot Authorization Server
+        After=network.target
+
+        [Service]
+        User=root
+        ExecStart=/opt/jdk/jdk-21.0.7/bin/java -jar /opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar
+        SuccessExitStatus=143
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - require:
+      - file: /opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar
+        
+authorization-server.service:
+  service.running:
+    - enable: True
+    - watch:
+      - file: /opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar
+    - require:
+      - file: /etc/systemd/system/authorization-server.service
+```
+
+```bash
+vagrant@auth:~$ sudo systemctl status authorization-server.service
+● authorization-server.service - Spring Boot Authorization Server
+     Loaded: loaded (/etc/systemd/system/authorization-server.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2025-05-05 15:00:45 CDT; 12min ago
+```
+
+
+```yaml
+/opt/bff/bff-0.0.1-SNAPSHOT.jar:
+  file.managed:
+    - source: salt://bff/files/bff-0.0.1-SNAPSHOT.jar
+    - makedirs: true
+      
+/etc/systemd/system/bff.service:
+  file.managed:
+    - contents: |
+        [Unit]
+        Description=Spring Boot Authorization Server
+        After=network.target
+
+        [Service]
+        User=root
+        ExecStart=/opt/jdk/jdk-21.0.7/bin/java -jar /opt/bff/bff-0.0.1-SNAPSHOT.jar
+        SuccessExitStatus=143
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - require:
+      - file: /opt/bff/bff-0.0.1-SNAPSHOT.jar
+        
+bff.service:
+  service.running:
+    - enable: True
+    - watch:
+      - file: /opt/bff/bff-0.0.1-SNAPSHOT.jar
+    - require:
+      - file: /etc/systemd/system/bff.service
+```
+
+```bash
+vagrant@bff:~$ sudo systemctl status bff.service
+● bff.service - Spring Boot Authorization Server
+     Loaded: loaded (/etc/systemd/system/bff.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2025-05-05 15:12:01 CDT; 2min 0s ago
+```
+
 
 ---
 
@@ -357,7 +741,7 @@ Ajoin staten myös auth- ja bff-minineille.
 
 [^6]: Oracle. 3 Installation of the JDK on Linux Platforms: https://docs.oracle.com/en/java/javase/21/install/installation-jdk-linux-platforms.html#GUID-ADC9C14A-5F51-4C32-802C-9639A947317F
 
-[^7]: OpenAI. ChatGPT: Version 1.2025.112, Model GPT‑4o mini.
+[^7]: OpenAI. ChatGPT: Version 1.2025.112, Model GPT‑4o.
 
 [^8]: Stack Overflow: How can I found where I defined JAVA_HOME: https://stackoverflow.com/questions/43229474/how-can-i-found-where-i-defined-java-home
 
@@ -366,3 +750,15 @@ Ajoin staten myös auth- ja bff-minineille.
 [^10]: Linode LLC. Configure Apache with Salt Stack: https://www.linode.com/docs/guides/configure-apache-with-salt-stack/
 
 [^11]: Salt Project. SALT.STATES.CMD: https://docs.saltproject.io/en/3006/ref/states/all/salt.states.cmd.html
+
+[^12]: Tero Karvinen. PostgreSQL Install and One Table Database – SQL CRUD tutorial for Ubuntu: https://terokarvinen.com/2016/postgresql-install-and-one-table-database-sql-crud-tutorial-for-ubuntu/
+
+[^13]: Sugeesh. Installing PostgreSQL on an Ubuntu VM Using SaltStack: https://medium.com/@Sugeesh/installing-postgresql-on-an-ubuntu-vm-using-saltstack-4974fd572f2b
+
+[^14]: Salt Project. SALT.STATES.POSTGRES_USER: https://docs.saltproject.io/en/3006/ref/states/all/salt.states.postgres_user.html
+
+[^15]: Fırat Civaner. What does /opt mean in Linux?: https://www.baeldung.com/linux/opt-directory
+
+[^16]: Dynamic Technologies. How To Deploy a Spring Boot Application on a VPS/EC2 Instance: https://www.youtube.com/watch?v=FcblQjgaDXM
+
+
