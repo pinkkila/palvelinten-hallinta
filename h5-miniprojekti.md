@@ -193,7 +193,7 @@ sudo mkdir -p /srv/salt/jdk
 sudoedit /srv/salt/jdk/init.sls
 ```
 
-Aiempien asentelujeni peruteella menin Oraclen sivuille [^6] katsomaan miten saisin ladattua jdk-21 Debianiin. Koska käytän ARM konetta valittavaksi jäi tarpallon lataaminen. Latasin ensin jdk:n suoraan toiselle Debianin virutaalikoneelle ja kävin asentamisen sillä läpi. Macissa vaihtelen HOME_JAVA:n jdk:ta .zshr tiedostossa ja saman pystyi tekemään myös Debianin .bashrc tiedostossa, mutta sen ongelmaksi tulee varmastikkin se, että HOME_JAVA on user:n muuttuja ja koska salt ajaa kaiken sudo:na ei se ole ehkä toimiva ratkaisu. Kysyin tähän ChatGPT:ltä [^7] vinkkiä ja päädyin vinkin ja tämän Stack Overflow keskustelun [^8] perusteella laittamaan /etc/profile.d/java.sh kansioon konfiguroinnin JAVA_HOME:sta ja PATH:sta. En ehtinyt ihan kunnolla selvittää tuota profide.d hakemisto ja vaikka toisen hyvänoloisen keskustelun [^9], niin en ihan sisäistänyt sitä. Täytyy myöhemmin opiskella tarkemmin. GPT:n [^7] ohjeesta tutkein myös `/opt` hakemistoa ja jos ymmärrän oikein niin ehkä sen käyttö on tässä ok, koska jdk sisältää useita kansioita ja filejä sisällään [^15], mutta en ole kyllä yhtään varma.        
+Aiempien asentelujeni peruteella menin Oraclen sivuille [^6] katsomaan miten saisin ladattua jdk-21 Debianiin. Koska käytän ARM konetta valittavaksi jäi tarpallon lataaminen. Latasin ensin jdk:n suoraan toiselle Debianin virutaalikoneelle ja kävin asentamisen sillä läpi. Macissa vaihtelen HOME_JAVA:n jdk:ta .zshr tiedostossa ja saman pystyi tekemään myös Debianin .bashrc tiedostossa, mutta sen ongelmaksi tulee varmaankin se, että HOME_JAVA on user:n muuttuja ja koska salt ajaa kaiken sudo:na ei se ole ehkä toimiva ratkaisu. Kysyin tähän ChatGPT:ltä [^7] vinkkiä ja päädyin vinkin ja tämän Stack Overflow keskustelun [^8] perusteella laittamaan /etc/profile.d/java.sh kansioon konfiguroinnin JAVA_HOME:sta ja PATH:sta. En ehtinyt ihan kunnolla selvittää tuota profide.d hakemisto ja vaikka toisen hyvänoloisen keskustelun [^9], niin en ihan sisäistänyt sitä. Täytyy myöhemmin opiskella tarkemmin. GPT:n [^7] ohjeesta tutkein myös `/opt` hakemistoa ja jos ymmärrän oikein niin ehkä sen käyttö on tässä ok, koska jdk sisältää useita kansioita ja filejä sisällään [^15], mutta en ole kyllä yhtään varma.        
 
 Kun sourcessa on verkko-osoite tarvitsee se Saltin virheilmoituksen mukaan joko tarkistaa hashilla tai sitten skipata. Täytyy myöhemmin tutkia tätäkin, mutta nyt skippasin. 
 
@@ -724,6 +724,26 @@ vagrant@bff:~$ sudo systemctl status bff.service
 ---
 
 ## Next.js sovellus
+
+
+recurse ja next.js
+
+```yaml
+nodejs:
+  pkg.installed
+
+npm:
+  pkg.installed
+  
+/home/vagrant/shop-front:
+  file.recurse:
+    - source: salt://front/files/shop-front
+    - makedirs: true
+      
+    
+
+```
+![img_1.png](img_1.png)
 
 ---
 
