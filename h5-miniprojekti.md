@@ -633,7 +633,7 @@ resource-server.service:
       - file: /etc/systemd/system/resource-server.service
 ```
 
-![img.png](img.png)
+![img.png](img/h5-miniprojekti/img.png)
 
 
 
@@ -725,8 +725,17 @@ vagrant@bff:~$ sudo systemctl status bff.service
 
 ## Next.js sovellus
 
+Next.js pystyy ajamaan sen omalla serverillä ajamalla `npm run build` ja `npm run start` [^18].
 
-recurse ja next.js
+Asentaessani next.js sovellusta minioniin huomasin, että kirjautuminen ei toimi. Auhtuhorization-server kyllä hyväksyy kirjautumisen, mutta koska next.js sovellus on eri osoitteessa, kuin mitä evästeet tarjoava bff Spring Boot sovellus, niin selain ei suostu käsittelemään niitä. Selain ilmoittaa seuraavasti:  
+
+![img_1.png](img/h5-miniprojekti/img_1.png)
+
+Itselleni tämä on erittäin siisti havainto, koska olen kyllä lukenut tästä, mutta en ole koskaan kunnolla sisäistänyt sitä. Nyt käy myös täysin järkeen miksi esim. tässä ohjeessa [^17] neuvotaan toteuttamaan bff pattern reverse-proxyn kanssa. 
+
+Koska aika alkaa loppua kesken joudun frontendin kanssa tekemään kompromissin ja laitan sen suoraan samaan minioniin bff Spring sovelluksen kanssa. Teen minionissa käsin next.js serverin käynnistämisen. Käytin seuraavaa statea koodin siirtämiseen ja node.js:n ja npm:n asentamiseen. (tämä oli alunperin frontend minionille, todella kätevä ajaa se vain suoraan bff:lle).
+
+`file.recurse` mahdollistaa kansion sisällön kopioimisen [^19].
 
 ```yaml
 nodejs:
@@ -739,11 +748,25 @@ npm:
   file.recurse:
     - source: salt://front/files/shop-front
     - makedirs: true
-      
-    
 
 ```
-![img_1.png](img_1.png)
+
+Komento, jolla tarkastelin Spring Bootien logeja (esim resource serveristä):
+
+```
+sudo journalctl -u resource-server.service -n 300
+```
+
+![img_2.png](img/h5-miniprojekti/img_2.png)
+
+
+![img_3.png](img/h5-miniprojekti/img_3.png)
+
+Valitettavasti Googlen OAuth kirjatutumista ei voi tässä käyttää, koska Google Consolin OAuth 2.0 credentiaaleihin kelpaa Authorized redirect URI:ksi vain localhost tai validi domain.
+
+![img_4.png](img/h5-miniprojekti/img_4.png)
+
+![img_5.png](img/h5-miniprojekti/img_5.png)
 
 ---
 
@@ -781,4 +804,8 @@ npm:
 
 [^16]: Dynamic Technologies. How To Deploy a Spring Boot Application on a VPS/EC2 Instance: https://www.youtube.com/watch?v=FcblQjgaDXM
 
+[^17]: Jérôme Wacongne. OAuth2 Backend for Frontend With Spring Cloud Gateway: https://www.baeldung.com/spring-cloud-gateway-bff-oauth2
 
+[^18]: Next.js. How to deploy your Next.js application: https://nextjs.org/docs/app/getting-started/deploying#nodejs-server
+
+[^19]: Salt Project. SALT.STATES.FILE: https://docs.saltproject.io/en/3006/ref/states/all/salt.states.file.html
