@@ -770,6 +770,369 @@ Valitettavasti Googlen OAuth kirjatutumista ei voi tässä käyttää, koska Goo
 
 ---
 
+## top.sls
+
+Kun itsenäisesti opiskelin Salt:ia törmäsin DevOps Libratyn videoon [^20], jossa tehtiin top.sls tiedosto, jolla sai konfiguroitua ajettavia stateja haluttuihin minioniehin. Videon ohjeilla päätin kokkeilla seuraavaa:
+
+```yaml
+base:
+  'resource':
+    - jdk
+    - postgre
+    - resource
+  'auth':
+    - jdk
+    - auth
+  'bff':
+    - jdk
+    - bff
+```
+
+Tämän jälkeen aloin miettiä järjestystä ja jos ymmärrän oikein, niin Salt dokumentaation [^21] mukaan tässä tulisi käyttää yksittäisissä stateissa `require: - sls: staten nimi`. Omassa setupissani minun ei tarvitse varmistaa muuta kuin, että jdk (ja postgres) asentuu ennen Spring sovelluksia ja että bff-Spring asentuu vasta kun auth-Spring on asentunut. (Totesin myös lopullisesti tässä vaiheessa, että oli erittäin sekava valinta nimetä statet ja minionit samoilla nimillä. Ei mitään järkeä, toki en tainnut nimeämishetkellä ajatellakkaan mitään).
+
+Muutin siis statejen init.sls filet seuraavaksi:
+
+##### resource init.sls
+
+```yaml
+/opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar:
+  file.managed:
+    - source: salt://resource/files/resource-server-0.0.1-SNAPSHOT.jar
+    - makedirs: true
+    - require:
+      - sls: jdk
+      - sls: postgre
+
+/etc/systemd/system/resource-server.service:
+  file.managed:
+    - contents: |
+        [Unit]
+        Description=Spring Boot Resource Server
+        After=network.target
+
+        [Service]
+        User=root
+        ExecStart=/opt/jdk/jdk-21.0.7/bin/java -jar /opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar
+        SuccessExitStatus=143
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - require:
+      - file: /opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar
+
+resource-server.service:
+  service.running:
+    - enable: True
+    - watch:
+      - file: /opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar
+    - require:
+      - file: /etc/systemd/system/resource-server.service
+```
+
+##### auth init.sls:
+
+```yaml
+/opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar:
+  file.managed:
+    - source: salt://auth/files/authorization-server-0.0.1-SNAPSHOT.jar
+    - makedirs: true
+    - require:
+      - sls: jdk
+
+/etc/systemd/system/authorization-server.service:
+  file.managed:
+    - contents: |
+        [Unit]
+        Description=Spring Boot Authorization Server
+        After=network.target
+
+        [Service]
+        User=root
+        ExecStart=/opt/jdk/jdk-21.0.7/bin/java -jar /opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar
+        SuccessExitStatus=143
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - require:
+      - file: /opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar
+
+authorization-server.service:
+  service.running:
+    - enable: True
+    - watch:
+      - file: /opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar
+    - require:
+      - file: /etc/systemd/system/authorization-server.service
+```
+
+##### bff init.sls
+
+```yaml
+/opt/bff/bff-0.0.1-SNAPSHOT.jar:
+  file.managed:
+    - source: salt://bff/files/bff-0.0.1-SNAPSHOT.jar
+    - makedirs: true
+    - require:
+      - sls: jdk
+
+/etc/systemd/system/bff.service:
+  file.managed:
+    - contents: |
+        [Unit]
+        Description=Spring Boot Authorization Server
+        After=network.target
+
+        [Service]
+        User=root
+        ExecStart=/opt/jdk/jdk-21.0.7/bin/java -jar /opt/bff/bff-0.0.1-SNAPSHOT.jar
+        SuccessExitStatus=143
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+    - require:
+      - file: /opt/bff/bff-0.0.1-SNAPSHOT.jar
+
+bff.service:
+  service.running:
+    - enable: True
+    - watch:
+      - file: /opt/bff/bff-0.0.1-SNAPSHOT.jar
+    - require:
+      - file: /etc/systemd/system/bff.service
+```
+
+Kosta front state on vajaa, pitää se ajaa tämän ulkopuolella ja vaatii muutenkin säätämistä käsin. Mutta muuten näyttää toimivan (ei-käytössä oleva frontend se tekee errorin):
+
+```
+sudo salt '*' state.highstate
+```
+
+```bash
+vagrant@master:/srv/salt/bff$ sudo salt '*' state.highstate
+frontend:
+----------
+          ID: states
+    Function: no.None
+      Result: False
+     Comment: No Top file or master_tops data matches found. Please see master log for details.
+     Changes:
+
+Summary for frontend
+------------
+Succeeded: 0
+Failed:    1
+------------
+Total states run:     1
+Total run time:   0.000 ms
+resource:
+----------
+          ID: /opt/jdk/jdk-21_linux-aarch64_bin.tar.gz
+    Function: file.managed
+      Result: True
+     Comment: File /opt/jdk/jdk-21_linux-aarch64_bin.tar.gz is in the correct state
+     Started: 06:57:07.568456
+    Duration: 224.694 ms
+     Changes:
+----------
+          ID: unpack-jdk-tar
+    Function: cmd.run
+        Name: tar -xzf /opt/jdk/jdk-21_linux-aarch64_bin.tar.gz -C /opt/jdk
+      Result: True
+     Comment: /opt/jdk/jdk-21.0.7 exists
+     Started: 06:57:07.793918
+    Duration: 469.243 ms
+     Changes:
+----------
+          ID: /etc/profile.d/java.sh
+    Function: file.managed
+      Result: True
+     Comment: File /etc/profile.d/java.sh is in the correct state
+     Started: 06:57:08.263217
+    Duration: 1.954 ms
+     Changes:
+----------
+          ID: postgresql
+    Function: pkg.installed
+      Result: True
+     Comment: All specified packages are already installed
+     Started: 06:57:08.268434
+    Duration: 9.705 ms
+     Changes:
+----------
+          ID: myuser
+    Function: postgres_user.present
+      Result: True
+     Comment: User myuser is already present
+     Started: 06:57:08.278277
+    Duration: 227.727 ms
+     Changes:
+----------
+          ID: shop_db
+    Function: postgres_database.present
+      Result: True
+     Comment: Database shop_db is already present
+     Started: 06:57:08.506196
+    Duration: 85.48 ms
+     Changes:
+----------
+          ID: /opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar
+    Function: file.managed
+      Result: True
+     Comment: File /opt/resource-server/resource-server-0.0.1-SNAPSHOT.jar is in the correct state
+     Started: 06:57:08.591864
+    Duration: 69.83 ms
+     Changes:
+----------
+          ID: /etc/systemd/system/resource-server.service
+    Function: file.managed
+      Result: True
+     Comment: File /etc/systemd/system/resource-server.service is in the correct state
+     Started: 06:57:08.662085
+    Duration: 1.018 ms
+     Changes:
+----------
+          ID: resource-server.service
+    Function: service.running
+      Result: True
+     Comment: The service resource-server.service is already running
+     Started: 06:57:08.663284
+    Duration: 10.795 ms
+     Changes:
+
+Summary for resource
+------------
+Succeeded: 9
+Failed:    0
+------------
+Total states run:     9
+Total run time:   1.100 s
+bff:
+----------
+          ID: /opt/jdk/jdk-21_linux-aarch64_bin.tar.gz
+    Function: file.managed
+      Result: True
+     Comment: File /opt/jdk/jdk-21_linux-aarch64_bin.tar.gz is in the correct state
+     Started: 06:57:07.329387
+    Duration: 215.914 ms
+     Changes:
+----------
+          ID: unpack-jdk-tar
+    Function: cmd.run
+        Name: tar -xzf /opt/jdk/jdk-21_linux-aarch64_bin.tar.gz -C /opt/jdk
+      Result: True
+     Comment: /opt/jdk/jdk-21.0.7 exists
+     Started: 06:57:07.545902
+    Duration: 667.762 ms
+     Changes:
+----------
+          ID: /etc/profile.d/java.sh
+    Function: file.managed
+      Result: True
+     Comment: File /etc/profile.d/java.sh is in the correct state
+     Started: 06:57:08.213715
+    Duration: 1.661 ms
+     Changes:
+----------
+          ID: /opt/bff/bff-0.0.1-SNAPSHOT.jar
+    Function: file.managed
+      Result: True
+     Comment: File /opt/bff/bff-0.0.1-SNAPSHOT.jar is in the correct state
+     Started: 06:57:08.215452
+    Duration: 73.148 ms
+     Changes:
+----------
+          ID: /etc/systemd/system/bff.service
+    Function: file.managed
+      Result: True
+     Comment: File /etc/systemd/system/bff.service is in the correct state
+     Started: 06:57:08.288801
+    Duration: 1.634 ms
+     Changes:
+----------
+          ID: bff.service
+    Function: service.running
+      Result: True
+     Comment: The service bff.service is already running
+     Started: 06:57:08.290583
+    Duration: 10.898 ms
+     Changes:
+
+Summary for bff
+------------
+Succeeded: 6
+Failed:    0
+------------
+Total states run:     6
+Total run time: 971.017 ms
+auth:
+----------
+          ID: /opt/jdk/jdk-21_linux-aarch64_bin.tar.gz
+    Function: file.managed
+      Result: True
+     Comment: File /opt/jdk/jdk-21_linux-aarch64_bin.tar.gz is in the correct state
+     Started: 06:57:07.781817
+    Duration: 220.753 ms
+     Changes:
+----------
+          ID: unpack-jdk-tar
+    Function: cmd.run
+        Name: tar -xzf /opt/jdk/jdk-21_linux-aarch64_bin.tar.gz -C /opt/jdk
+      Result: True
+     Comment: /opt/jdk/jdk-21.0.7 exists
+     Started: 06:57:08.003214
+    Duration: 460.274 ms
+     Changes:
+----------
+          ID: /etc/profile.d/java.sh
+    Function: file.managed
+      Result: True
+     Comment: File /etc/profile.d/java.sh is in the correct state
+     Started: 06:57:08.463544
+    Duration: 1.015 ms
+     Changes:
+----------
+          ID: /opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar
+    Function: file.managed
+      Result: True
+     Comment: File /opt/authorization-server/authorization-server-0.0.1-SNAPSHOT.jar is in the correct state
+     Started: 06:57:08.464633
+    Duration: 49.519 ms
+     Changes:
+----------
+          ID: /etc/systemd/system/authorization-server.service
+    Function: file.managed
+      Result: True
+     Comment: File /etc/systemd/system/authorization-server.service is in the correct state
+     Started: 06:57:08.514351
+    Duration: 1.536 ms
+     Changes:
+----------
+          ID: authorization-server.service
+    Function: service.running
+      Result: True
+     Comment: The service authorization-server.service is already running
+     Started: 06:57:08.516045
+    Duration: 10.382 ms
+     Changes:
+
+Summary for auth
+------------
+Succeeded: 6
+Failed:    0
+------------
+Total states run:     6
+Total run time: 743.479 ms
+ERROR: Minions returned with non-zero exit code
+```
+
+--
+
 ### Lähteet
 
 [^1]: Tero Karvinen. Palvelinten Hallinta: https://terokarvinen.com/palvelinten-hallinta/ 
@@ -809,3 +1172,7 @@ Valitettavasti Googlen OAuth kirjatutumista ei voi tässä käyttää, koska Goo
 [^18]: Next.js. How to deploy your Next.js application: https://nextjs.org/docs/app/getting-started/deploying#nodejs-server
 
 [^19]: Salt Project. SALT.STATES.FILE: https://docs.saltproject.io/en/3006/ref/states/all/salt.states.file.html
+
+[^20]: DevOpt Library. DevOpsLibrary Episode 4: Salt States: https://www.youtube.com/watch?v=AsvVp-ldT2Q
+
+[^21]: Salt Project. ORDERING STATES: https://docs.saltproject.io/en/3006/ref/states/ordering.html
