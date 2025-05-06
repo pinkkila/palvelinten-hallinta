@@ -1,4 +1,4 @@
-## h5 Miniprojekti
+# h5 Miniprojekti
 
 Tehtävät ovat Tero Karvisen opintojaksolta [Palvelinten Hallinta 2025 kevät](https://terokarvinen.com/palvelinten-hallinta/) [^1]
 
@@ -11,6 +11,8 @@ Tehtävät ovat Tero Karvisen opintojaksolta [Palvelinten Hallinta 2025 kevät](
 - Parallels Desktop
 
 ---
+
+# a) Oma miniprojekti.
 
 ## Projektin tavoite
 
@@ -1130,6 +1132,10 @@ Total states run:     6
 Total run time: 743.479 ms
 ERROR: Minions returned with non-zero exit code
 ```
+
+## b) Etusivu. Laita projektisi etusivulle tärkeimmät tiedot
+
+https://github.com/pinkkila/palvelinten_hallinta-miniprojekti
 
 --
 
