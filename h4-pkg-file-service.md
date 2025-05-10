@@ -975,7 +975,7 @@ Portti oli vaihtunut ja moduuli toimi idempotentisti.
 
 ---
 
-### Asenna ja konfiguroi Apache ja Name Based Virtual Host. Sen tulee näyttää palvelimen etusivulla weppisivua. Weppisivun tulee olla muokattavissa käyttäjän oikeuksin, ilman sudoa.
+### c) Asenna ja konfiguroi Apache ja Name Based Virtual Host. Sen tulee näyttää palvelimen etusivulla weppisivua. Weppisivun tulee olla muokattavissa käyttäjän oikeuksin, ilman sudoa.
 
 Aiemman tekemäni perusteella ja Karvisen [^5] sekä Linoden [^10] ohjeiden perusteella, minulla on aavistus siitä, miten tämän voisi tehdä, niin lähden kokeilemaan suoraan sls-tiedoston tekemistä. 
 
