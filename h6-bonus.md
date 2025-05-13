@@ -83,7 +83,7 @@ https://github.com/pinkkila/palvelinten-hallinta/blob/main/h4-pkg-file-service.m
 
 ### h4: d) Vapaaehtoinen, haastava: Caddy. Asenna Caddy tarjoilemaan weppisivua. Weppisivun tulee näkyä palvelimen etusivulla (localhost). HTML:n tulee olla jonkun käyttäjän kotihakemistossa, ja olla muokattavissa normaalin käyttäjän oikeuksin, ilman sudoa.
 
-
+Aika loppui kesken, mutta täytyy tutkia tätä kurssin jälkeen. Vaikutti erittäin hyvältä ja jännä nähdä millainen on käyttää. 
 
 
 ---
