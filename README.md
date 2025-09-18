@@ -6,7 +6,7 @@ In this course, I gained hands-on experience with **Infrastructure as Code (IaC)
 **In this course:**
 - Configured Linux servers and services using **Salt**
 - Automated reproducible environments with **Vagrant**
-- Applied principles of **idempotency** and **single source of truth** in system administration
+- Applied principles of **idempotency** and **single source of truth**
 - Deepened practical knowledge of Linux system administration and troubleshooting
 
 I received a grade of 5/5 for the course.
