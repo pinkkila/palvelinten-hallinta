@@ -1,4 +1,4 @@
-# Configuration Management Systems (Palvelinten Hallinta) Homework Reports
+# Palvelinten Hallinta (Configuration Management Systems) - Homework Reports (in Finnish)
 
 Homework reports for [Palvelinten Hallinta course](https://terokarvinen.com/palvelinten-hallinta/) taught by Tero Karvinen.
 In this course, I gained hands-on experience with **Infrastructure as Code (IaC)** and automation for Linux system administration.
